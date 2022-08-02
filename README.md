@@ -24,9 +24,11 @@
             - [Evaluating on Ascend](#evaluating-on-ascend)
         - [ONNX Evaluation](#onnx-evaluation)
     - [Inference Process](#inference-process)
-        - [Export MindIR](#export-mindir)
+        - [Infer on GPU](#infer-on-gpu)
         - [Infer on Ascend310](#infer-on-ascend310)
-        - [result](#result)
+            - [Export MindIR](#export-mindir)
+            - [Inference](#inference)
+            - [result](#result)
     - [Model Description](#model-description)
         - [Performance](#performance)
             - [Evaluation Performance](#evaluation-performance)
@@ -350,9 +352,19 @@ eval average dice is 0.9502010010453671
 
 ## Inference Process
 We can do the inference either on GPU or Ascend310 
-### [Infer on GPU and save the segment result](#contents)
+### [Infer on GPU](#contents)
+```shell
+# GPU inference
+bash ./run_standalone_infer_gpu_fp32.sh [DATA_PATH] [CHECKPOINT_FILE_PATH]
+# For example
+bash ./run_standalone_infer_gpu_fp32.sh ../LUNA16/inference/ ../Unet3d-10_877.ckpt
+```
+The result is saved in scrips/infer_fp32.
 
-### [Export MindIR](#contents)
+
+### [Infer on Ascend310](#contents)
+
+#### [Export MindIR](#contents)
 
 ```shell
 python export.py --ckpt_file [CKPT_PATH] --file_name [FILE_NAME] --file_format [FILE_FORMAT]
@@ -361,7 +373,7 @@ python export.py --ckpt_file [CKPT_PATH] --file_name [FILE_NAME] --file_format [
 The ckpt_file parameter is required,
 `file_format` should be in ["AIR", "MINDIR"]
 
-### [Infer on Ascend310](#contents)
+#### [Inference](#contents)
 
 Before performing inference, the mindir file must be exported by `export.py` script. We only provide an example of inference using MINDIR model.
 
@@ -373,7 +385,7 @@ bash run_infer_310.sh [MINDIR_PATH] [NEED_PREPROCESS] [DEVICE_ID]
 - `NEED_PREPROCESS` means weather need preprocess or not, it's value is 'y' or 'n'.
 - `DEVICE_ID` is optional, default value is 0.
 
-### [result](#contents)
+#### [result](#contents)
 
 Inference result is saved in current path, you can find result like this in acc.log file.
 
@@ -418,82 +430,15 @@ eval average dice is 0.9502010010453671
 | Dice                | dice = 0.93                 | dice = 0.93                 | dice = 0.93                 |
 | Model for inference | 56M(.ckpt file)             | 56M(.ckpt file)             | 56M(.ckpt file)             |
 
-# [Description of Random Situation](#contents)
+## [Description of Random Situation](#contents)
 
 We set seed to 1 in train.py.
+
+## [Problem Shooting](#contents)
+- Problem 1: there is a bug in the original “unet3d/src/convert_nifti.py”, you should delete the “src.”
 
 ## [ModelZoo Homepage](#contents)
 
 Please check the official [homepage](https://gitee.com/mindspore/models).
 
-
-## [Quick Start](#contents)
-
-
-Refer to `default_config.yaml`. We support some parameter configurations for quick start.
-
-- Run on Ascend
-
-```python
-
-# run training example
-python train.py --data_path=/path/to/data/ > train.log 2>&1 &
-
-# run distributed training example
-bash scripts/run_distribute_train.sh [RANK_TABLE_FILE] [DATA_PATH]
-
-# run evaluation example
-python eval.py --data_path=/path/to/data/ --checkpoint_file_path=/path/to/checkpoint/ > eval.log 2>&1 &
-```
-
-- Run on GPU
-
-```shell
-# enter scripts directory
-cd scripts
-# run training example(fp32)
-bash ./run_standalone_train_gpu_fp32.sh [TRAINING_DATA_PATH]
-# run training example(fp16)
-bash ./run_standalone_train_gpu_fp16.sh [TRAINING_DATA_PATH]
-# run distributed training example(fp32)
-bash ./run_distribute_train_gpu_fp32.sh [TRAINING_DATA_PATH]
-# run distributed training example(fp16)
-bash ./run_distribute_train_gpu_fp16.sh [TRAINING_DATA_PATH]
-# run evaluation example(fp32)
-bash ./run_standalone_eval_gpu_fp32.sh [VALIDATING_DATA_PATH] [CHECKPOINT_FILE_PATH]
-# run evaluation example(fp16)
-bash ./run_standalone_eval_gpu_fp16.sh [VALIDATING_DATA_PATH] [CHECKPOINT_FILE_PATH]
-
-```
-
-If you want to run in modelarts, please check the official documentation of [modelarts](https://support.huaweicloud.com/modelarts/), and you can start training and evaluation as follows:
-
-```python
-# run distributed training on modelarts example
-# (1) First, Perform a or b.
-#       a. Set "enable_modelarts=True" on yaml file.
-#          Set other parameters on yaml file you need.
-#       b. Add "enable_modelarts=True" on the website UI interface.
-#          Add other parameters on the website UI interface.
-# (2) Download nibabel and set pip-requirements.txt to code directory
-# (3) Set the code directory to "/path/unet3d" on the website UI interface.
-# (4) Set the startup file to "train.py" on the website UI interface.
-# (5) Set the "Dataset path" and "Output file path" and "Job log path" to your path on the website UI interface.
-# (6) Create your job.
-
-# run evaluation on modelarts example
-# (1) Copy or upload your trained model to S3 bucket.
-# (2) Perform a or b.
-#       a. Set "enable_modelarts=True" on yaml file.
-#          Set "checkpoint_file_path='/cache/checkpoint_path/model.ckpt'" on yaml file.
-#          Set "checkpoint_url=/The path of checkpoint in S3/" on yaml file.
-#       b. Add "enable_modelarts=True" on the website UI interface.
-#          Add "checkpoint_file_path='/cache/checkpoint_path/model.ckpt'" on the website UI interface.
-#          Add "checkpoint_url=/The path of checkpoint in S3/" on the website UI interface.
-# (3) Download nibabel and set pip-requirements.txt to code directory
-# (4) Set the code directory to "/path/unet3d" on the website UI interface.
-# (5) Set the startup file to "eval.py" on the website UI interface.
-# (6) Set the "Dataset path" and "Output file path" and "Job log path" to your path on the website UI interface.
-# (7) Create your job.
-```
 
