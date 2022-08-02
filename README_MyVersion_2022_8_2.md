@@ -1,69 +1,61 @@
-# Contents
 
+# Contents
 - [Contents](#contents)
-    - [Unet Description](#unet-description)
-    - [Model Architecture](#model-architecture)
-    - [Dataset](#dataset)
+    - [Unet3D Model Architecture](#unet3d-model-architecture)
+    - [Dataset Description](#dataset-description)
     - [Environment Requirements](#environment-requirements)
-    - [Quick Start](#quick-start)
     - [Script Description](#script-description)
         - [Script and Sample Code](#script-and-sample-code)
         - [Script Parameters](#script-parameters)
+    - [Setup](#setup)
+        - [Prepare Running Environment](#prepare-running-environment)
+        - [Prepare Dataset](#prepare-dataset)
+        - [Convert data](#convert-data)
     - [Training Process](#training-process)
         - [Training](#training)
-            - [Training on Ascend](#training-on-ascend)
             - [Training on GPU](#training-on-gpu)
+            - [Training on Ascend](#training-on-ascend)
         - [Distributed Training](#distributed-training)
-            - [Distributed training on Ascend](#distributed-training-on-ascend)
             - [Distributed training on GPU](#distributed-training-on-gpu)
+            - [Distributed training on Ascend](#distributed-training-on-ascend)  
     - [Evaluation Process](#evaluation-process)
         - [Evaluation](#evaluation)
-            - [Evaluating on Ascend](#evaluating-on-ascend)
             - [Evaluating on GPU](#training-on-gpu)
+            - [Evaluating on Ascend](#evaluating-on-ascend)
         - [ONNX Evaluation](#onnx-evaluation)
     - [Inference Process](#inference-process)
-        - [Export MindIR](#export-mindir)
+        - [Infer on GPU](#infer-on-gpu)
         - [Infer on Ascend310](#infer-on-ascend310)
-        - [result](#result)
+            - [Export MindIR](#export-mindir)
+            - [Inference](#inference)
+            - [result](#result)
     - [Model Description](#model-description)
         - [Performance](#performance)
             - [Evaluation Performance](#evaluation-performance)
             - [Inference Performance](#inference-performance)
-- [Description of Random Situation](#description-of-random-situation)
-    - [ModelZoo Homepage](#modelzoo-homepage)
+	- [Description of Random Situation](#description-of-random-situation)
+	- [Problem Shooting](#problem-shooting)
+	- [ModelZoo Homepage](#modelzoo-homepage)
 
-## [Unet Description](#contents)
 
-Unet3D model is widely used for 3D medical image segmentation. The construct of Unet3D network is similar to the Unet, the main difference is that Unet3D use 3D operations like Conv3D while Unet is anentirely 2D architecture. To know more information about Unet3D network, you can read the original paper Unet3D: Learning Dense VolumetricSegmentation from Sparse Annotation.
 
-## [Model Architecture](#contents)
+
+## [Unet3D Model Architecture](#contents)
 
 Unet3D model is created based on the previous Unet(2D), which includes an encoder part and a decoder part. The encoder part is used to analyze the whole picture and extract and analyze features, while the decoder part is to generate a segmented block image. In this model, we also add residual block in the base block to improve the network.
 
-## [Dataset](#contents)
+Unet3D model is widely used for 3D medical image segmentation. The construct of Unet3D network is similar to the Unet, the main difference is that Unet3D use 3D operations like Conv3D while Unet is anentirely 2D architecture. To know more information about Unet3D network, you can read the original paper [Unet3D: Learning Dense VolumetricSegmentation from Sparse Annotation](https://arxiv.org/abs/1606.06650).
 
+The following is the structure of original structure of Unet3D. Subsequently, according to the requirements of datasets and different tasks, the network structure can be modified, such as changing the number of input channels to 1
+![avatar](./doc_resources/unet3d_structure.jpg)
+
+
+## [Dataset Description](#contents)
 Dataset used: [LUNA16](https://luna16.grand-challenge.org/)
 
-- Description: The data is to automatically detect the location of nodules from volumetric CT images. 888 CT scans from LIDC-IDRI database are provided. The complete dataset is divided into 10 subsets that should be used for the 10-fold cross-validation. All subsets are available as compressed zip files.
+Luna16 dataset, fully known as Lung Nodule Analysis 16, is a lung nodule detection dataset launched in 2016. It is designed to be a benchmark for evaluating various CAD (computer aid detection system). It has 10 subfolders, subset0~subset9. Each folder contains cases, and each case corresponds to two files with the same file name and different suffixes. The.mhd file stores the basic information of CT, The.raw file stores the actual CT data.The seg-lungs-LUNA16 folder stores the mask of the lung. We use seg-lungs-LUNA16 as the segment of the lung lobe segmentation task.
 
-- Dataset size：887
-    - Train：877 images
-    - Test：10 images(last 10 images in subset9 with lexicographical order)
-- Data format：zip
-    - Note：Data will be processed in convert_nifti.py, and one of them will be ignored during data processing.
-- Data Content Structure
-
-```text
-
-.
-└─LUNA16
-  ├── train
-  │   ├── image         // contains 877 image files
-  |   ├── seg           // contains 877 seg files
-  ├── val
-  │   ├── image         // contains 10 image files
-  |   ├── seg           // contains 10 seg files
-```
+The segment of Luna16 is divided into four categories, 0 represents the background, 3 represents the left lung, 4 represents the right lung, and 5 represents the blood vessels. Therefore, this task is actually a four category task.
 
 ## [Environment Requirements](#contents)
 
@@ -74,86 +66,10 @@ Dataset used: [LUNA16](https://luna16.grand-challenge.org/)
 - For more information, please check the resources below：
     - [MindSpore Tutorials](https://www.mindspore.cn/tutorials/en/master/index.html)
     - [MindSpore Python API](https://www.mindspore.cn/docs/api/en/master/index.html)
-
-## [Quick Start](#contents)
-
-After installing MindSpore via the official website, you can start training and evaluation as follows:
-
-- Select the network and dataset to use
-
-```shell
-
-Convert dataset into mifti format.
-python ./src/convert_nifti.py --data_path=/path/to/input_image/ --output_path=/path/to/output_image/
-
-```
-
-Refer to `default_config.yaml`. We support some parameter configurations for quick start.
-
-- Run on Ascend
-
-```python
-
-# run training example
-python train.py --data_path=/path/to/data/ > train.log 2>&1 &
-
-# run distributed training example
-bash scripts/run_distribute_train.sh [RANK_TABLE_FILE] [DATA_PATH]
-
-# run evaluation example
-python eval.py --data_path=/path/to/data/ --checkpoint_file_path=/path/to/checkpoint/ > eval.log 2>&1 &
-```
-
-- Run on GPU
-
-```shell
-# enter scripts directory
-cd scripts
-# run training example(fp32)
-bash ./run_standalone_train_gpu_fp32.sh [TRAINING_DATA_PATH]
-# run training example(fp16)
-bash ./run_standalone_train_gpu_fp16.sh [TRAINING_DATA_PATH]
-# run distributed training example(fp32)
-bash ./run_distribute_train_gpu_fp32.sh [TRAINING_DATA_PATH]
-# run distributed training example(fp16)
-bash ./run_distribute_train_gpu_fp16.sh [TRAINING_DATA_PATH]
-# run evaluation example(fp32)
-bash ./run_standalone_eval_gpu_fp32.sh [VALIDATING_DATA_PATH] [CHECKPOINT_FILE_PATH]
-# run evaluation example(fp16)
-bash ./run_standalone_eval_gpu_fp16.sh [VALIDATING_DATA_PATH] [CHECKPOINT_FILE_PATH]
-
-```
-
-If you want to run in modelarts, please check the official documentation of [modelarts](https://support.huaweicloud.com/modelarts/), and you can start training and evaluation as follows:
-
-```python
-# run distributed training on modelarts example
-# (1) First, Perform a or b.
-#       a. Set "enable_modelarts=True" on yaml file.
-#          Set other parameters on yaml file you need.
-#       b. Add "enable_modelarts=True" on the website UI interface.
-#          Add other parameters on the website UI interface.
-# (2) Download nibabel and set pip-requirements.txt to code directory
-# (3) Set the code directory to "/path/unet3d" on the website UI interface.
-# (4) Set the startup file to "train.py" on the website UI interface.
-# (5) Set the "Dataset path" and "Output file path" and "Job log path" to your path on the website UI interface.
-# (6) Create your job.
-
-# run evaluation on modelarts example
-# (1) Copy or upload your trained model to S3 bucket.
-# (2) Perform a or b.
-#       a. Set "enable_modelarts=True" on yaml file.
-#          Set "checkpoint_file_path='/cache/checkpoint_path/model.ckpt'" on yaml file.
-#          Set "checkpoint_url=/The path of checkpoint in S3/" on yaml file.
-#       b. Add "enable_modelarts=True" on the website UI interface.
-#          Add "checkpoint_file_path='/cache/checkpoint_path/model.ckpt'" on the website UI interface.
-#          Add "checkpoint_url=/The path of checkpoint in S3/" on the website UI interface.
-# (3) Download nibabel and set pip-requirements.txt to code directory
-# (4) Set the code directory to "/path/unet3d" on the website UI interface.
-# (5) Set the startup file to "eval.py" on the website UI interface.
-# (6) Set the "Dataset path" and "Output file path" and "Job log path" to your path on the website UI interface.
-# (7) Create your job.
-```
+- My Environment Example
+    - Ubuntu 16.04 LTS, GTX 1050Ti Notebook 4G, Memory 16G, System Swap Memory 8G
+    - Cuda 10.1, Nvidia Driver 430
+    - Mindspore 1.6.1 GPU version
 
 ## [Script Description](#contents)
 
@@ -164,6 +80,7 @@ If you want to run in modelarts, please check the official documentation of [mod
 .
 └─unet3d
   ├── README.md                                 // descriptions about Unet3D
+  ├── LUNA16                                    // dataset
   ├── scripts
   │   ├──run_distribute_train.sh                // shell script for distributed on Ascend
   │   ├──run_standalone_train.sh                // shell script for standalone on Ascend
@@ -175,6 +92,8 @@ If you want to run in modelarts, please check the official documentation of [mod
   │   ├──run_standalone_eval_gpu_fp32.sh        // shell script for evaluation on GPU fp32
   │   ├──run_standalone_eval_gpu_fp16.sh        // shell script for evaluation on GPU fp16
   │   ├──run_eval_onnx.sh                       // shell script for ONNX evaluation
+  │   ├──run_infer_310.sh                       // shell script for inference on Ascend
+  │   ├──run_standalone_infer_gpu_fp32.sh       // shell script for standalone inference on GPU fp32
   ├── src
   │   ├──dataset.py                             // creating dataset
   │   ├──lr_schedule.py                         // learning rate scheduler
@@ -192,7 +111,9 @@ If you want to run in modelarts, please check the official documentation of [mod
   ├── default_config.yaml                       // parameter configuration
   ├── train.py                                  // training script
   ├── eval.py                                   // evaluation script
+  ├── infer.py                                  // inference script
   ├── eval_onnx.py                              // ONNX evaluation script
+  ├── Unet3d-10_877.ckpt                        // checkpoint can be used for inference
 
 ```
 
@@ -223,6 +144,58 @@ Parameters for both training and evaluation can be set in config.py
 
 ```
 
+
+## [Setup](#contents)
+### [Prepare Running Environment](#contents)
+```shell
+# Open terminal and create a new virtual environment.
+conda create -n mindspore_1.6.1_gpu_py37 python=3.7
+# Activate conda environment.
+conda activate mindspore_1.6.1_gpu_py37
+# Install the mindspore and other library
+conda install mindspore-gpu=1.6.1 cudatoolkit=10.1 -c mindspore -c conda-forge
+conda install matplotlib
+conda install scikit-image
+pip install onnxruntime-gpu
+conda install SimpleITK
+```
+### [Prepare Dataset](#contents)
+- Description: The data is to automatically detect the location of nodules from volumetric CT images. 888 CT scans from LIDC-IDRI database are provided. The complete dataset is divided into 10 subsets that should be used for the 10-fold cross-validation. All subsets are available as compressed zip files. Unzip subset0.rar to subset9.rar into “LUNA16/train/image/” and Unzip seg-lungs-LUNA16.rar into “LUNA16/train/seg/”.
+
+- Dataset size：887
+    - Train：877 images
+    - Test：10 images(last 10 images in subset9 with lexicographical order)
+- Data format：zip
+    - Note：Data will be processed in convert_nifti.py, and one of them will be ignored during data processing.
+- Data Content Structure
+
+```text
+
+.
+└─LUNA16
+  ├── train
+  │   ├── image         // contains 877 image files
+  |   ├── seg           // contains 877 seg files
+  ├── val
+  │   ├── image         // contains 10 image files
+  |   ├── seg           // contains 10 seg files
+```
+### [Convert data](#contents)
+```shell
+# Convert dataset into mifti format.
+python ./src/convert_nifti.py --data_path=/path/to/input_image/ --output_path=/path/to/output_image/
+```
+For example
+```shell
+# Convert the image data
+python ./src/convert_nifti.py –data_path=./LUNA16/train/image/ --output_path=./LUNA16/train/image/
+# Convert the seg data
+python ./src/convert_nifti.py –data_path=./LUNA16/train/seg/ --output_path=./LUNA16/train/seg/
+```
+
+
+
+
 ## [Training Process](#contents)
 
 ### Training
@@ -236,7 +209,8 @@ cd scripts
 bash ./run_standalone_train_gpu_fp32.sh /path_prefix/LUNA16/train
 # fp16
 bash ./run_standalone_train_gpu_fp16.sh /path_prefix/LUNA16/train
-
+# For example
+bash ./run_standalone_train_gpu_fp32.sh ../LUNA16/train
 ```
 
 The python command above will run in the background, you can view the results through the file `train.log`.
@@ -269,7 +243,7 @@ epoch time: 1180467.795 ms, per step time: 1380.664 ms
 
 ### Distributed Training
 
-#### Distributed training on GPU(8P)
+#### Distributed training on GPU
 
 ```shell
 # enter scripts directory
@@ -332,7 +306,8 @@ bash ./run_standalone_eval_gpu_fp16.sh /path_prefix/LUNA16/val /path_prefix/trai
 bash ./run_standalone_eval_gpu_fp32.sh /path_prefix/LUNA16/val /path_prefix/train_parallel_fp32/output/ckpt_0/Unet3d-10_110.ckpt
 # fp16, 8gpu
 bash ./run_standalone_eval_gpu_fp16.sh /path_prefix/LUNA16/val /path_prefix/train_parallel_fp16/output/ckpt_0/Unet3d-10_110.ckpt
-
+# For example
+bash ./run_standalone_eval_gpu_fp32.sh ../LUNA16/val ./train_fp32/output/ckpt_0/Unet3d-10_877.ckpt
 ```
 
 #### Evaluating on Ascend
@@ -376,8 +351,20 @@ eval average dice is 0.9502010010453671
   ```
 
 ## Inference Process
+We can do the inference either on GPU or Ascend310 
+### [Infer on GPU](#contents)
+```shell
+# GPU inference
+bash ./run_standalone_infer_gpu_fp32.sh [DATA_PATH] [CHECKPOINT_FILE_PATH]
+# For example
+bash ./run_standalone_infer_gpu_fp32.sh ../LUNA16/inference/ ../Unet3d-10_877.ckpt
+```
+The result is saved in scrips/infer_fp32.
 
-### [Export MindIR](#contents)
+
+### [Infer on Ascend310](#contents)
+
+#### [Export MindIR](#contents)
 
 ```shell
 python export.py --ckpt_file [CKPT_PATH] --file_name [FILE_NAME] --file_format [FILE_FORMAT]
@@ -386,7 +373,7 @@ python export.py --ckpt_file [CKPT_PATH] --file_name [FILE_NAME] --file_format [
 The ckpt_file parameter is required,
 `file_format` should be in ["AIR", "MINDIR"]
 
-### Infer on Ascend310
+#### [Inference](#contents)
 
 Before performing inference, the mindir file must be exported by `export.py` script. We only provide an example of inference using MINDIR model.
 
@@ -398,7 +385,7 @@ bash run_infer_310.sh [MINDIR_PATH] [NEED_PREPROCESS] [DEVICE_ID]
 - `NEED_PREPROCESS` means weather need preprocess or not, it's value is 'y' or 'n'.
 - `DEVICE_ID` is optional, default value is 0.
 
-### result
+#### [result](#contents)
 
 Inference result is saved in current path, you can find result like this in acc.log file.
 
@@ -443,10 +430,44 @@ eval average dice is 0.9502010010453671
 | Dice                | dice = 0.93                 | dice = 0.93                 | dice = 0.93                 |
 | Model for inference | 56M(.ckpt file)             | 56M(.ckpt file)             | 56M(.ckpt file)             |
 
-# [Description of Random Situation](#contents)
+## [Description of Random Situation](#contents)
 
 We set seed to 1 in train.py.
+
+## [Problem Shooting](#contents)
+- Problem 1: there is a bug in the original “unet3d/src/convert_nifti.py”, you should delete the “src.”
+![avatar](./doc_resources/problem1.png)
+
+- Problem 2: When training, need permission to modify the file.
+```shell
+sudo chmod -R 777 ~/Document # add the authority to your user
+```
+- NVIDIA driver problem when doing evaluation
+When raise error: 'Failed to create CUDA stream | Error Number: 0' in eval.log.
+It is likely that the NVIDIA driver and CUDA version do not match, and the NVIDIA driver version needs to be higher than CUDA version.
+Need to update NVIDIA driver version.
+Version matching requirements: https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html
+Follow this command to update the NVIDIA driver.
+```shell
+sudo add-apt-repository ppa:graphics-drivers/ppa
+sudo apt update
+ubuntu-drivers devices
+```
+![avatar](./doc_resources/nvidia_problem.png)
+
+Update the recommended version. For example, here my recommended one this nvidia-430.
+```shell
+sudo apt install nvidia-430
+```
+- Pause and Train on the previous or pretrained version
+Rename 'unet3d/train.py' to 'unet3d/train_original.py'
+Go to line80 in 'unet3d/train_cont_version.py' and modify the ckpt path you want. 
+Save file.
+Rename 'unet3d/train_cont_version.py' to 'unet3d/train.py'
+
 
 ## [ModelZoo Homepage](#contents)
 
 Please check the official [homepage](https://gitee.com/mindspore/models).
+
+

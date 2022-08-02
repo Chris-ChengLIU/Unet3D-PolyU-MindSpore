@@ -1,0 +1,22 @@
+AI-HW-HTI-Project
+
+batch [5, (241,256,256,1)] there 5 cases to test/inference
+mask_test (241,256,256,1)
+
+
+Unet3D
+Luna16的segment分为4类，0代表背景，3代表左肺，4代表右肺，5代表血管，因此该任务实际是一个4分类任务。 
+luna16原始ct图像的shape为(512, 512, depth)，depth为3D图像的深度。
+在送入网络训练时，通过随机裁剪，从原始图像上裁剪出固定的的shape作为网络的输入，裁剪时segment和image需要保持相同的裁剪位置。
+
+image.shape 	(1, 1, 512, 512, 199)
+image_size	(1, 4, 512, 512, 199)  1 is the batch_size, 4 is the num_classes/应该可以看成是channel
+output_image	(1, 4, 512, 512, 199)  zero matrix created by image_size
+count_map	(1, 4, 512, 512, 199)  zero matrix created by image_size
+importance_map	(224, 224, 96)	       one matrix create by config.roi_size
+
+window_image	(1, 1, 224, 224, 96)   actual input 经过了一定比例和interval和roi_size的随机裁剪，生成了27个图
+27个图投入网络生成mask，然后经过整合，恢复到image.shape
+output_image	(1, 4, 512, 512, 199)  actual output	
+
+
