@@ -437,6 +437,7 @@ We set seed to 1 in train.py.
 ## [Problem Shooting](#contents)
 - Problem 1: there is a bug in the original “unet3d/src/convert_nifti.py”, you should delete the “src.”
 ![avatar](./doc_resources/problem1.png)
+
 - Problem 2: When training, need permission to modify the file.
 ```shell
 sudo chmod -R 777 ~/Document # add the authority to your user
@@ -453,6 +454,7 @@ sudo apt update
 ubuntu-drivers devices
 ```
 ![avatar](./doc_resources/nvidia_problem.png)
+
 Update the recommended version. For example, here my recommended one this nvidia-430.
 ```shell
 sudo apt install nvidia-430
