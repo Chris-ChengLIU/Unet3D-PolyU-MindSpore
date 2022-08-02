@@ -14,15 +14,15 @@
         - [Make Evaluation Set](#make-evaluation-set)
     - [Training Process](#training-process)
         - [Training](#training)
-            - [Training on Ascend](#training-on-ascend)
             - [Training on GPU](#training-on-gpu)
+            - [Training on Ascend](#training-on-ascend)
         - [Distributed Training](#distributed-training)
-            - [Distributed training on Ascend](#distributed-training-on-ascend)
             - [Distributed training on GPU](#distributed-training-on-gpu)
+            - [Distributed training on Ascend](#distributed-training-on-ascend)  
     - [Evaluation Process](#evaluation-process)
         - [Evaluation](#evaluation)
-            - [Evaluating on Ascend](#evaluating-on-ascend)
             - [Evaluating on GPU](#training-on-gpu)
+            - [Evaluating on Ascend](#evaluating-on-ascend)
         - [ONNX Evaluation](#onnx-evaluation)
     - [Inference Process](#inference-process)
         - [Export MindIR](#export-mindir)
@@ -49,7 +49,7 @@ The following is the structure of original structure of Unet3D. Subsequently, ac
 ![avatar](./doc_resources/unet3d_structure.jpg)
 
 
-## [Dataset Description](#dataset-description)](#contents)
+## [Dataset Description](#contents)
 Dataset used: [LUNA16](https://luna16.grand-challenge.org/)
 
 Luna16 dataset, fully known as Lung Nodule Analysis 16, is a lung nodule detection dataset launched in 2016. It is designed to be a benchmark for evaluating various CAD (computer aid detection system). It has 10 subfolders, subset0~subset9. Each folder contains cases, and each case corresponds to two files with the same file name and different suffixes. The.mhd file stores the basic information of CT, The.raw file stores the actual CT data.The seg-lungs-LUNA16 folder stores the mask of the lung. We use seg-lungs-LUNA16 as the segment of the lung lobe segmentation task.
@@ -70,7 +70,89 @@ The segment of Luna16 is divided into four categories, 0 represents the backgrou
     - Cuda 10.1, Nvidia Driver 430
     - Mindspore 1.6.1 GPU version
 
+## [Script Description](#contents)
+
+### [Script and Sample Code](#contents)
+
+```text
+
+.
+└─unet3d
+  ├── README.md                                 // descriptions about Unet3D
+  ├── LUNA16                                    // dataset
+  ├── scripts
+  │   ├──run_distribute_train.sh                // shell script for distributed on Ascend
+  │   ├──run_standalone_train.sh                // shell script for standalone on Ascend
+  │   ├──run_standalone_eval.sh                 // shell script for evaluation on Ascend
+  │   ├──run_distribute_train_gpu_fp32.sh       // shell script for distributed on GPU fp32
+  │   ├──run_distribute_train_gpu_fp16.sh       // shell script for distributed on GPU fp16
+  │   ├──run_standalone_train_gpu_fp32.sh       // shell script for standalone on GPU fp32
+  │   ├──run_standalone_train_gpu_fp16.sh       // shell script for standalone on GPU fp16
+  │   ├──run_standalone_eval_gpu_fp32.sh        // shell script for evaluation on GPU fp32
+  │   ├──run_standalone_eval_gpu_fp16.sh        // shell script for evaluation on GPU fp16
+  │   ├──run_eval_onnx.sh                       // shell script for ONNX evaluation
+  │   ├──run_infer_310.sh                       // shell script for inference on Ascend
+  │   ├──run_standalone_infer_gpu_fp32.sh       // shell script for standalone inference on GPU fp32
+  ├── src
+  │   ├──dataset.py                             // creating dataset
+  │   ├──lr_schedule.py                         // learning rate scheduler
+  │   ├──transform.py                           // handle dataset
+  │   ├──convert_nifti.py                       // convert dataset
+  │   ├──loss.py                                // loss
+  │   ├──utils.py                               // General components (callback function)
+  │   ├──unet3d_model.py                        // Unet3D model
+  │   ├──unet3d_parts.py                        // Unet3D part
+          ├── model_utils
+          │   ├──config.py                      // parameter configuration
+          │   ├──device_adapter.py              // device adapter
+          │   ├──local_adapter.py               // local adapter
+          │   ├──moxing_adapter.py              // moxing adapter
+  ├── default_config.yaml                       // parameter configuration
+  ├── train.py                                  // training script
+  ├── eval.py                                   // evaluation script
+  ├── infer.py                                  // inference script
+  ├── eval_onnx.py                              // ONNX evaluation script
+  ├── Unet3d-10_877.ckpt                        // checkpoint can be used for inference
+
+```
+
+### [Script Parameters](#contents)
+
+Parameters for both training and evaluation can be set in config.py
+
+- config for Unet3d, luna16 dataset
+
+```python
+
+  'model': 'Unet3d',                  # model name
+  'lr': 0.0005,                       # learning rate
+  'epochs': 10,                       # total training epochs when run 1p
+  'batchsize': 1,                     # training batch size
+  "warmup_step": 120,                 # warmp up step in lr generator
+  "warmup_ratio": 0.3,                # warpm up ratio
+  'num_classes': 4,                   # the number of classes in the dataset
+  'in_channels': 1,                   # the number of channels
+  'keep_checkpoint_max': 5,           # only keep the last keep_checkpoint_max checkpoint
+  'loss_scale': 256.0,                # loss scale
+  'roi_size': [224, 224, 96],         # random roi size
+  'overlap': 0.25,                    # overlap rate
+  'min_val': -500,                    # intersity original range min
+  'max_val': 1000,                    # intersity original range max
+  'upper_limit': 5                    # upper limit of num_classes
+  'lower_limit': 3                    # lower limit of num_classes
+
+```
+
+
 ## [Setup](#contents)
+### [Prepare Running Environment](#contents)
+Open terminal and create a new virtual environment.
+```shell
+conda create -n mindspore_1.6.1_gpu_py37 python=3.7
+```
+### [Prepare Dataset](#contents)
+### [Convert data](#contents)
+### [Make Evaluation Set](#contents)
 
 - Description: The data is to automatically detect the location of nodules from volumetric CT images. 888 CT scans from LIDC-IDRI database are provided. The complete dataset is divided into 10 subsets that should be used for the 10-fold cross-validation. All subsets are available as compressed zip files.
 
@@ -173,73 +255,7 @@ If you want to run in modelarts, please check the official documentation of [mod
 # (7) Create your job.
 ```
 
-## [Script Description](#contents)
 
-### [Script and Sample Code](#contents)
-
-```text
-
-.
-└─unet3d
-  ├── README.md                                 // descriptions about Unet3D
-  ├── scripts
-  │   ├──run_distribute_train.sh                // shell script for distributed on Ascend
-  │   ├──run_standalone_train.sh                // shell script for standalone on Ascend
-  │   ├──run_standalone_eval.sh                 // shell script for evaluation on Ascend
-  │   ├──run_distribute_train_gpu_fp32.sh       // shell script for distributed on GPU fp32
-  │   ├──run_distribute_train_gpu_fp16.sh       // shell script for distributed on GPU fp16
-  │   ├──run_standalone_train_gpu_fp32.sh       // shell script for standalone on GPU fp32
-  │   ├──run_standalone_train_gpu_fp16.sh       // shell script for standalone on GPU fp16
-  │   ├──run_standalone_eval_gpu_fp32.sh        // shell script for evaluation on GPU fp32
-  │   ├──run_standalone_eval_gpu_fp16.sh        // shell script for evaluation on GPU fp16
-  │   ├──run_eval_onnx.sh                       // shell script for ONNX evaluation
-  ├── src
-  │   ├──dataset.py                             // creating dataset
-  │   ├──lr_schedule.py                         // learning rate scheduler
-  │   ├──transform.py                           // handle dataset
-  │   ├──convert_nifti.py                       // convert dataset
-  │   ├──loss.py                                // loss
-  │   ├──utils.py                               // General components (callback function)
-  │   ├──unet3d_model.py                        // Unet3D model
-  │   ├──unet3d_parts.py                        // Unet3D part
-          ├── model_utils
-          │   ├──config.py                      // parameter configuration
-          │   ├──device_adapter.py              // device adapter
-          │   ├──local_adapter.py               // local adapter
-          │   ├──moxing_adapter.py              // moxing adapter
-  ├── default_config.yaml                       // parameter configuration
-  ├── train.py                                  // training script
-  ├── eval.py                                   // evaluation script
-  ├── eval_onnx.py                              // ONNX evaluation script
-
-```
-
-### [Script Parameters](#contents)
-
-Parameters for both training and evaluation can be set in config.py
-
-- config for Unet3d, luna16 dataset
-
-```python
-
-  'model': 'Unet3d',                  # model name
-  'lr': 0.0005,                       # learning rate
-  'epochs': 10,                       # total training epochs when run 1p
-  'batchsize': 1,                     # training batch size
-  "warmup_step": 120,                 # warmp up step in lr generator
-  "warmup_ratio": 0.3,                # warpm up ratio
-  'num_classes': 4,                   # the number of classes in the dataset
-  'in_channels': 1,                   # the number of channels
-  'keep_checkpoint_max': 5,           # only keep the last keep_checkpoint_max checkpoint
-  'loss_scale': 256.0,                # loss scale
-  'roi_size': [224, 224, 96],         # random roi size
-  'overlap': 0.25,                    # overlap rate
-  'min_val': -500,                    # intersity original range min
-  'max_val': 1000,                    # intersity original range max
-  'upper_limit': 5                    # upper limit of num_classes
-  'lower_limit': 3                    # lower limit of num_classes
-
-```
 
 ## [Training Process](#contents)
 
