@@ -436,6 +436,33 @@ We set seed to 1 in train.py.
 
 ## [Problem Shooting](#contents)
 - Problem 1: there is a bug in the original “unet3d/src/convert_nifti.py”, you should delete the “src.”
+![avatar](./doc_resources/problem1.png)
+- Problem 2: When training, need permission to modify the file.
+```shell
+sudo chmod -R 777 ~/Document # add the authority to your user
+```
+- NVIDIA driver problem when doing evaluation
+When raise error: 'Failed to create CUDA stream | Error Number: 0' in eval.log.
+It is likely that the NVIDIA driver and CUDA version do not match, and the NVIDIA driver version needs to be higher than CUDA version.
+Need to update NVIDIA driver version.
+Version matching requirements: https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html
+Follow this command to update the NVIDIA driver.
+```shell
+sudo add-apt-repository ppa:graphics-drivers/ppa
+sudo apt update
+ubuntu-drivers devices
+```
+![avatar](./doc_resources/nvidia_problem.png)
+Update the recommended version. For example, here my recommended one this nvidia-430.
+```shell
+sudo apt install nvidia-430
+```
+- Pause and Train on the previous or pretrained version
+Rename 'unet3d/train.py' to 'unet3d/train_original.py'
+Go to line80 in 'unet3d/train_cont_version.py' and modify the ckpt path you want. 
+Save file.
+Rename 'unet3d/train_cont_version.py' to 'unet3d/train.py'
+
 
 ## [ModelZoo Homepage](#contents)
 
