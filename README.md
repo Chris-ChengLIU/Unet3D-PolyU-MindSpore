@@ -47,6 +47,7 @@ Unet3D model is created based on the previous Unet(2D), which includes an encode
 Unet3D model is widely used for 3D medical image segmentation. The construct of Unet3D network is similar to the Unet, the main difference is that Unet3D use 3D operations like Conv3D while Unet is anentirely 2D architecture. To know more information about Unet3D network, you can read the original paper [Unet3D: Learning Dense VolumetricSegmentation from Sparse Annotation](https://arxiv.org/abs/1606.06650).
 
 The following is the structure of original structure of Unet3D. Subsequently, according to the requirements of datasets and different tasks, the network structure can be modified, such as changing the number of input channels to 1
+
 ![avatar](./doc_resources/unet3d_structure.jpg)
 
 
